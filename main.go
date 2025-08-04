@@ -1,71 +1,39 @@
-
 package main
 
 import (
+	"context"
+	"log"
+	"os"
+
+	"github.com/alkhanov95/api-gateway/handler"
+	"github.com/alkhanov95/api-gateway/internal/storage"
+
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
+	"github.com/joho/godotenv"
 )
 
-type User struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-	Age  int    `json:"age"`
-}
-
-var users = make(map[string]User)
-
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal(".env не найден или не загружен")
+	}
+
+	dburl := os.Getenv("DATABASE_URL")
+	if dburl == "" {
+		log.Fatal("DATABASE_URL пуст")
+	}
+
+	conn, err := storage.GetConnect(context.Background(), dburl)
+	if err != nil {
+		log.Fatalf("ошибка подключения к БД: %v", err)
+	}
+	defer conn.Close()
+
+	log.Println("✅ Подключение к базе прошло успешно")
+
 	app := fiber.New()
 
-	//post
-	app.Post("/user", func(c *fiber.Ctx) error {
-		var user User
-		if err := c.BodyParser(&user); err !=  {
-			return c.Status(400).JSON(fiber.Map{"error": "invalid JSON"})
-		}
-		user.ID = uuid.New().String()
-		users[user.ID] = user
-		return c.Status(201).JSON(user)
-	})
+	handler.SetupUserRoutes(app, conn)
 
-	//GET
-	app.Get("/user/:id", func(c *fiber.Ctx) error {
-		id := c.Params("id")
-		user, exists := users[id]
-
-		if !exists {
-			return c.Status(404).JSON(fiber.Map{"error": "user not found"})
-		}
-		return c.JSON(user)
-	})
-
-	//PUT
-	app.Put("/user", func(c *fiber.Ctx) error {
-		var user User
-		if err := c.BodyParser(&user); err != nil {
-			return c.Status(400).JSON(fiber.Map{"error": "invalid JSON"})
-		}
-		if user.ID == "" {
-			return c.Status(400).JSON(fiber.Map{"error": "ID is required"})
-		}
-		_, exists := users[user.ID]
-		if !exists {
-			return c.Status(404).JSON(fiber.Map{"error": "user not found"})
-		}
-		users[user.ID] = user
-		return c.JSON(user)
-	})
-
-	app.Delete("/user/:id", func(c *fiber.Ctx) error {
-		id := c.Params("id")
-		_, exists := users[id]
-		if !exists {
-			return c.Status(404).JSON(fiber.Map{"error": "user not found"})
-		}
-		delete(users, id)
-		return c.JSON(fiber.Map{"message": "user deleted"})
-	})
-
-	app.Listen(":3000")
+	log.Fatal(app.Listen(":3000"))
 }
-
