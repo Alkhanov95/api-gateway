@@ -10,16 +10,16 @@ import (
 func GetConnect(ctx context.Context, connstr string) (*pgxpool.Pool, error) {
 	cfg, err := pgxpool.ParseConfig(connstr)
 	if err != nil {
-		return nil, errors.Wrap(err, "не удалось распарсить строку подключения")
+		return nil, errors.Wrap(err, "не удалось распарсить строку подключения") //change from ru to eng
 	}
 
 	pool, err := pgxpool.NewWithConfig(ctx, cfg)
 	if err != nil {
-		return nil, errors.Wrap(err, "не удалось создать пул подключений")
+		return nil, errors.Wrap(err, "не удалось создать пул подключений") //change from ru to eng
 	}
 
 	if err := pool.Ping(ctx); err != nil {
-		return nil, errors.Wrap(err, "ping до базы не прошёл")
+		return nil, errors.Wrap(err, "ping до базы не прошёл") //change from ru to eng
 	}
 
 	return pool, nil
