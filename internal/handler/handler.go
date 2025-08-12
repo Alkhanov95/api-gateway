@@ -1,83 +1,53 @@
 package handler
 
 import (
-	"context"
 	"log/slog"
 
+	"github.com/alkhanov95/api-gateway/internal/repository"
+	"github.com/alkhanov95/api-gateway/models"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type User struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-	Age  int    `json:"age"`
+type Handle struct {
+	repo *repository.UserRepo
 }
 
-type Handle struct {
-	DB *pgxpool.Pool
+func New(repo *repository.UserRepo) *Handle {
+	return &Handle{repo: repo}
 }
 
 func (h *Handle) CreateUser(c *fiber.Ctx) error {
-	var user User
+	user := models.User{}
 	if err := c.BodyParser(&user); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid JSON"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err})
 	}
-
 	user.ID = uuid.New().String()
-
-	_, err := h.DB.Exec(context.Background(),
-		"INSERT INTO users (id, name, age) VALUES ($1, $2, $3)",
-		user.ID, user.Name, user.Age,
-	)
-	if err != nil {
-		slog.Error(("Failed to insert into database: "), slog.Any("error", err))
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "insert DB fail"})
-	}
-
-	return c.Status(fiber.StatusCreated).JSON(user)
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"id": user.ID})
 }
 
 func (h *Handle) GetUserByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	slog.Info("Get request by ID:", "id", id) //slog.info?
+	slog.Info("Get request by ID:", "id", id)
 
-	var user User
-
-	err := h.DB.QueryRow(context.Background(),
-		"SELECT id, name, age FROM users WHERE id = $1", id).Scan(&user.ID, &user.Name, &user.Age)
-
+	user, err := h.repo.GetByID(c.UserContext(), id)
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "not found"})
-		}
-		slog.Error(("Failed to execute SELECT query"), slog.Any("error", err), "id", id)
+		slog.Error("Failed to get user by ID", slog.Any("error", err), "id", id)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+	}
+
+	if user == nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "user not found"})
 	}
 
 	return c.JSON(user)
 }
 
 func (h *Handle) GetAllUsers(c *fiber.Ctx) error {
-	var users []User
-
-	rows, err := h.DB.Query(context.Background(), "SELECT id, name, age FROM users")
+	users, err := h.repo.List(c.UserContext())
 	if err != nil {
 		slog.Error(("Error while selecting user: "), slog.Any("error", err))
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "cannot get the users"})
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var u User
-
-		if err := rows.Scan(&u.ID, &u.Name, &u.Age); err != nil {
-			slog.Error("Error while reading string", err)
-			continue
-		}
-		users = append(users, u)
 
 	}
 	return c.JSON(users)
@@ -85,22 +55,26 @@ func (h *Handle) GetAllUsers(c *fiber.Ctx) error {
 
 func (h *Handle) DeleteUserByID(c *fiber.Ctx) error {
 	id := c.Params("id")
-	slog.Info("Delete request by id", "id", id)
-
-	del, err := h.DB.Exec(context.Background(),
-		"DELETE FROM users WHERE id = $1", id,
-	)
-
+	err := h.repo.Delete(c.UserContext(), id)
 	if err != nil {
 		slog.Error("Failed to execute delete query", slog.Any("error", err), "id", id)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "internal server error"})
 	}
+	return c.SendStatus(fiber.StatusNoContent)
+}
 
-	if del.RowsAffected() == 0 {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "user not found"})
-
+func (h *Handle) UpdateUser(c *fiber.Ctx) error {
+	var user *models.User
+	if err := c.BodyParser(&user); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": err})
 	}
+	user.ID = c.Params("id")
 
+	err := h.repo.Update(c.UserContext(), user)
+	if err != nil {
+		slog.Error("Failed to execute update query", slog.Any("error", err), "id", user.ID)
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "internal server error"})
+	}
 	return c.SendStatus(fiber.StatusNoContent)
 }

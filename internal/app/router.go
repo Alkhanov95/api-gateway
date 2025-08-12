@@ -5,9 +5,14 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func SetupUserRoutes(app *fiber.App, h *handler.Handle) {
+func setupUserRoutes(h *handler.Handle) *fiber.App {
+	app := fiber.New() //heap stack read!
+
 	app.Post("/users", h.CreateUser)
 	app.Get("/users/:id", h.GetUserByID)
 	app.Get("/users", h.GetAllUsers)
 	app.Delete("/users/:id", h.DeleteUserByID)
+	app.Put("/users/:id", h.UpdateUser)
+
+	return app
 }
