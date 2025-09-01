@@ -3,7 +3,8 @@ package repository
 import (
 	"context"
 
-	"github.com/alkhanov95/api-gateway/models"
+	"github.com/alkhanov95/api-gateway/internal/apperr"
+	"github.com/alkhanov95/api-gateway/internal/models"
 	"github.com/jackc/pgx/v5" // pgx.ErrNoRows
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pkg/errors" // errors.Wrap
@@ -17,7 +18,7 @@ func NewUserRepo(db *pgxpool.Pool) *UserRepo {
 	return &UserRepo{db: db}
 }
 
-func (r *UserRepo) Create(ctx context.Context, user *models.User) (string, error) {
+func (r *UserRepo) CreateUser(ctx context.Context, user *models.User) (string, error) {
 	_, err := r.db.Exec(ctx,
 		`INSERT INTO users (id, name, age) VALUES ($1, $2, $3)`,
 		user.ID, user.Name, user.Age,
@@ -28,15 +29,15 @@ func (r *UserRepo) Create(ctx context.Context, user *models.User) (string, error
 	return user.ID, nil // возвращаем созданный ID, ошибки нет
 }
 
-func (r *UserRepo) GetByID(ctx context.Context, id string) (*models.User, error) {
+func (r *UserRepo) GetUserByID(ctx context.Context, id string) (*models.User, error) {
 	var user models.User
 	err := r.db.QueryRow(ctx,
 		`SELECT id, name, age FROM users WHERE id = $1`,
 		id,
 	).Scan(&user.ID, &user.Name, &user.Age)
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, nil // не нашли пользователя: nil-указатель и nil-ошибка (это не ошибка, а отсутствие данных)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, apperr.ErrNotFound // не нашли пользователя: nil-указатель и nil-ошибка (это не ошибка, а отсутствие данных)
 		}
 		return nil, errors.Wrap(err, "get user by id") // ошибка запроса/сканирования: nil-результат и обёрнутая ошибка
 	}

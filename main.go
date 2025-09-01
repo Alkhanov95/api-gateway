@@ -5,12 +5,12 @@ import (
 	"os"
 
 	"github.com/alkhanov95/api-gateway/internal/app"
-	//slog
 )
 
 func main() {
+	// Запуск приложения
 	if err := app.Run(); err != nil {
-		slog.Error("app Run", slog.Any("error", err))
+		slog.Error("failed to start app", slog.Any("error", err))
 		os.Exit(1)
 	}
 }

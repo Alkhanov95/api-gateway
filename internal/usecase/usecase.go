@@ -3,24 +3,24 @@ package usecase
 import (
 	"context"
 
+	"github.com/alkhanov95/api-gateway/internal/models"
 	"github.com/alkhanov95/api-gateway/internal/repository"
-	"github.com/alkhanov95/api-gateway/models"
 )
 
 type Usecase struct {
-	userRepo repository.UserRepo
+	userRepo repository.UserProvider
 }
 
-func New(userRepo repository.UserRepo) *Usecase {
+func New(userRepo repository.UserProvider) *Usecase {
 	return &Usecase{userRepo: userRepo}
 }
 
-func (r *Usecase) Create(ctx context.Context, u *models.User) (string, error) {
-	return r.userRepo.Create(ctx, u)
+func (r *Usecase) CreateUser(ctx context.Context, u *models.User) (string, error) {
+	return r.userRepo.CreateUser(ctx, u)
 }
 
-func (r *Usecase) GetByID(ctx context.Context, id string) (*models.User, error) {
-	return r.userRepo.GetByID(ctx, id)
+func (r *Usecase) GetUserByID(ctx context.Context, id string) (*models.User, error) {
+	return r.userRepo.GetUserByID(ctx, id)
 }
 
 func (r *Usecase) List(ctx context.Context) ([]models.User, error) {
