@@ -28,20 +28,4 @@ Planned improvements:
 
 ---
 
-## 📂 Project Structure
 
-```bash
-.
-├── app.go             # Entry point
-├── config.go          # Config loader
-├── config.yaml        # Example configuration
-├── router.go          # HTTP router setup
-├── internal/          
-│   ├── handler/       # HTTP handlers (Fiber)
-│   ├── usecase/       # Business logic (UserProvider)
-│   ├── repository/    # Data access layer
-│   ├── models/        # Domain models (User, etc.)
-│   └── apperr/        # Custom application errors
-├── storage.go         # Storage layer
-├── cache.go           # (Planned) caching logic
-└── tests/             # (Planned) integration & unit tests
