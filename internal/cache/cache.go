@@ -18,7 +18,7 @@ type cacheEntry struct {
 // Decorator wraps repo and adds in-memory cache with TTL
 type Decorator struct {
 	repo  repository.UserProvider
-	mu    sync.Mutex
+	mu    sync.RWMutex
 	users map[string]cacheEntry
 	ttl   time.Duration
 }
@@ -53,34 +53,38 @@ func (d *Decorator) CreateUser(ctx context.Context, u *models.User) (string, err
 	return id, nil
 }
 
+func (d *Decorator) get(id string) *models.User {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	if e, ok := d.users[id]; ok {
+		return e.user
+	}
+	return nil
+}
+
+func (d *Decorator) set(user *models.User) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.users[user.ID] = cacheEntry{
+		user:      user,
+		expiresAt: time.Now().Add(d.ttl),
+	}
+
+}
+
 // GetUserByID -> check cache first. If missing/expired -> repo, then update cache
 func (d *Decorator) GetUserByID(ctx context.Context, id string) (*models.User, error) {
-	now := time.Now()
 
-	d.mu.Lock()
-	if e, ok := d.users[id]; ok {
-		if now.Before(e.expiresAt) {
-			u := e.user
-			d.mu.Unlock()
-			return u, nil
-		}
-		// expired -> delete
-		delete(d.users, id)
+	if user := d.get(id); user != nil {
+		return user, nil
 	}
-	d.mu.Unlock()
 
 	u, err := d.repo.GetUserByID(ctx, id)
-	if err != nil || u == nil {
-		return u, err
+	if err != nil {
+		return nil, err
 	}
 
-	d.mu.Lock()
-	d.users[id] = cacheEntry{
-		user:      u,
-		expiresAt: now.Add(d.ttl),
-	}
-	d.mu.Unlock()
-
+	d.set(u)
 	return u, nil
 }
 
