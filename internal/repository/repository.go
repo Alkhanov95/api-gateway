@@ -75,7 +75,7 @@ func (r *UserRepo) Update(ctx context.Context, user *models.User) error {
 		return errors.Wrap(err, "update user") // ошибка выполнения UPDATE
 	}
 	if res.RowsAffected() == 0 {
-		return pgx.ErrNoRows // ничего не обновили: сигнал наверх "не найдено"
+		return apperr.ErrNotFound // ничего не обновили: сигнал наверх "не найдено"
 	}
 	return nil // успешно обновили: ошибки нет
 }
@@ -88,7 +88,7 @@ func (r *UserRepo) Delete(ctx context.Context, id string) error {
 		return errors.Wrap(err, "delete user") // ошибка выполнения DELETE
 	}
 	if res.RowsAffected() == 0 {
-		return pgx.ErrNoRows // ничего не удалили: сигнал наверх "не найдено"
+		return apperr.ErrNotFound // ничего не удалили: сигнал наверх "не найдено"
 	}
 	return nil // успешно удалили: ошибки нет
 }

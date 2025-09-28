@@ -2,8 +2,10 @@ package app
 
 import (
 	"context"
+	"time"
 
 	"github.com/alkhanov95/api-gateway/config"
+	"github.com/alkhanov95/api-gateway/internal/cache"
 	"github.com/alkhanov95/api-gateway/internal/handler"
 	"github.com/alkhanov95/api-gateway/internal/repository"
 	"github.com/alkhanov95/api-gateway/internal/storage"
@@ -24,7 +26,8 @@ func Run() error {
 	defer conn.Close()
 
 	repo := repository.NewUserRepo(conn)
-	h := handler.New(repo)
+	cachedRepo := cache.New(repo, 5*time.Minute)
+	h := handler.New(cachedRepo)
 	router := setupUserRoutes(h)
 
 	if err := router.Listen(":" + cfg.App.Port); err != nil {

@@ -13,7 +13,6 @@ import (
 
 type Handle struct {
 	uc usecase.UserProvider
-	//поменять usecase на usecase.UserProvider
 }
 
 func New(uc usecase.UserProvider) *Handle {
@@ -76,7 +75,7 @@ func (h *Handle) GetAllUsers(c *fiber.Ctx) error {
 	return c.JSON(users)
 }
 
-func (h *Handle) DeleteUserByID(c *fiber.Ctx) error {
+func (h *Handle) DeleteUserByID(c *fiber.Ctx) error { //
 	id := c.Params("id")
 	err := h.uc.Delete(c.UserContext(), id)
 	if err != nil {
@@ -101,5 +100,3 @@ func (h *Handle) UpdateUser(c *fiber.Ctx) error {
 	}
 	return c.SendStatus(fiber.StatusNoContent)
 }
- 
-
