@@ -2,9 +2,9 @@ app:
   port: "3000"
 
 db:
-  host: "localhost"
-  port: "5432"
+  host: "postgres" 
+  port: "5432" 
   user: "postgres"
-  password: ""      
+  password: "postgres"      
   name: "postgres"
   sslmode: "disable"

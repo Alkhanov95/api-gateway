@@ -13,7 +13,6 @@ import (
 )
 
 func Run() error {
-
 	cfg, err := config.Parse()
 	if err != nil {
 		return errors.Wrap(err, "parsing config")
@@ -23,15 +22,17 @@ func Run() error {
 	if err != nil {
 		return errors.Wrap(err, "connecting to DB")
 	}
+
 	defer conn.Close()
 
 	repo := repository.NewUserRepo(conn)
 	cachedRepo := cache.New(repo, 5*time.Minute)
-	h := handler.New(cachedRepo)
-	router := setupUserRoutes(h)
+	handle := handler.New(cachedRepo)
+	router := setupUserRoutes(handle)
 
 	if err := router.Listen(":" + cfg.App.Port); err != nil {
 		return errors.Wrap(err, "server listen") //message to docker/kuber that we shut with err
 	}
+
 	return nil
 }

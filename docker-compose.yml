@@ -1,0 +1,12 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./config:/app/config:ro   # чтобы внутри был /app/config/config.yaml
+
+     # добавить контейнер postgres, указать ports 5433:5432
+    # добавить таблицы в контейнер postgres(для начало подключится (vs code extension))

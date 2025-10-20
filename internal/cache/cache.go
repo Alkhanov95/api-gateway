@@ -9,8 +9,7 @@ import (
 	"github.com/alkhanov95/api-gateway/internal/repository"
 )
 
-// cacheEntry = user + when it expires
-type cacheEntry struct {
+type wrapUser struct {
 	user      *models.User
 	expiresAt time.Time
 }
@@ -19,15 +18,16 @@ type cacheEntry struct {
 type Decorator struct {
 	repo  repository.UserProvider
 	mu    sync.RWMutex
-	users map[string]cacheEntry
-	ttl   time.Duration
+	users map[string]wrapUser
+	ttl   time.Duration //add method that works in background (goroutine) once in 30 secs -> deletes old data from cache
+	//old data -> the data that expires at  < time.Now then we delete it
 }
 
 // New creates a new cache wrapper with given TTL
 func New(repo repository.UserProvider, ttl time.Duration) *Decorator {
 	return &Decorator{
 		repo:  repo,
-		users: make(map[string]cacheEntry),
+		users: make(map[string]wrapUser),
 		ttl:   ttl,
 	}
 }
@@ -43,13 +43,7 @@ func (d *Decorator) CreateUser(ctx context.Context, u *models.User) (string, err
 	}
 
 	u.ID = id
-	d.mu.Lock()
-	d.users[id] = cacheEntry{
-		user:      u,
-		expiresAt: time.Now().Add(d.ttl),
-	}
-	d.mu.Unlock()
-
+	d.set(u)
 	return id, nil
 }
 
@@ -65,7 +59,7 @@ func (d *Decorator) get(id string) *models.User {
 func (d *Decorator) set(user *models.User) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	d.users[user.ID] = cacheEntry{
+	d.users[user.ID] = wrapUser{
 		user:      user,
 		expiresAt: time.Now().Add(d.ttl),
 	}
@@ -93,19 +87,16 @@ func (d *Decorator) List(ctx context.Context) ([]models.User, error) {
 	return d.repo.List(ctx)
 }
 
-// Update -> repo, then refresh cache
 func (d *Decorator) Update(ctx context.Context, u *models.User) error {
+	if u == nil || u.ID == "" {
+		return nil
+	}
+	// 1) updating db
 	if err := d.repo.Update(ctx, u); err != nil {
 		return err
 	}
-	if u != nil && u.ID != "" {
-		d.mu.Lock()
-		d.users[u.ID] = cacheEntry{
-			user:      u,
-			expiresAt: time.Now().Add(d.ttl),
-		}
-		d.mu.Unlock()
-	}
+	// 2) updating cache
+	d.set(u)
 	return nil
 }
 
