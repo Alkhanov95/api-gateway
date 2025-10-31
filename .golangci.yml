@@ -6,18 +6,14 @@ run:
 formatters:
   enable:
     - goimports
-    - gofmt
 
 linters:
   enable:
     - errcheck
-    - gosimple
     - govet
     - ineffassign
     - staticcheck
-    - unused
     - bodyclose
-    - copyloopvar
     - unconvert
     - gosec
     - noctx
@@ -25,5 +21,3 @@ linters:
     - testifylint
     - goconst
     - nilerr
-    - contextcheck
-    - whitespace

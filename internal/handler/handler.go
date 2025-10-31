@@ -50,7 +50,7 @@ func (h *Handle) GetUserByID(c *fiber.Ctx) error {
 
 	user, err := h.uc.GetUserByID(c.UserContext(), id)
 	if err != nil {
-		//проверить чтобы в postman возвращалось 404
+		// проверить чтобы в postman возвращалось 404
 		if errors.Is(err, apperr.ErrNotFound) {
 			return c.SendStatus(fiber.StatusNotFound)
 		}

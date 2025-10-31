@@ -19,8 +19,8 @@ type Decorator struct {
 	repo  repository.UserProvider
 	mu    sync.RWMutex
 	users map[string]wrapUser
-	ttl   time.Duration //add method that works in background (goroutine) once in 30 secs -> deletes old data from cache
-	//old data -> the data that expires at  < time.Now then we delete it
+	ttl   time.Duration // add method that works in background (goroutine) once in 30 secs -> deletes old data from cache
+	// old data -> the data that expires at  < time.Now then we delete it
 }
 
 // New creates a new cache wrapper with given TTL
@@ -62,7 +62,7 @@ func (d *Decorator) get(id string) *models.User {
 }
 func (d *Decorator) set(user *models.User) {
 	if user == nil || user.ID == "" || d.ttl <= 0 {
-		return 
+		return
 	}
 	d.mu.Lock()
 	defer d.mu.Unlock()

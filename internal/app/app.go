@@ -31,7 +31,7 @@ func Run() error {
 	router := setupUserRoutes(handle)
 
 	if err := router.Listen(":" + cfg.App.Port); err != nil {
-		return errors.Wrap(err, "server listen") //message to docker/kuber that we shut with err
+		return errors.Wrap(err, "server listen") // message to docker/kuber that we shut with err
 	}
 
 	return nil
