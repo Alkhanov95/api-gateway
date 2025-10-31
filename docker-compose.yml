@@ -1,12 +1,33 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   app:
     build:
       context: .
       dockerfile: dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
     ports:
       - "3000:3000"
     volumes:
-      - ./config:/app/config:ro   # чтобы внутри был /app/config/config.yaml
+      - ./config:/app/config:ro
+    restart: unless-stopped
 
-     # добавить контейнер postgres, указать ports 5433:5432
-    # добавить таблицы в контейнер postgres(для начало подключится (vs code extension))
+volumes:
+  pgdata: {}

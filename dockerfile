@@ -2,17 +2,16 @@
 FROM golang:1.24-alpine AS builder
 WORKDIR /app
 
-# Копируем go.mod и go.sum
+
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Копируем весь проект
+
 COPY . .
 
-# Собираем бинарь
 RUN CGO_ENABLED=0 GOOS=linux go build -o app .
 
-# ===== runtime stage =====
+
 FROM alpine:3.20
 WORKDIR /app
 

@@ -50,20 +50,46 @@ func (d *Decorator) CreateUser(ctx context.Context, u *models.User) (string, err
 func (d *Decorator) get(id string) *models.User {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
-	if e, ok := d.users[id]; ok {
-		return e.user
+	e, ok := d.users[id]
+	if !ok {
+		return nil // not in cache
 	}
-	return nil
+	// if TTL expired -> nothing to return
+	if time.Now().After(e.expiresAt) {
+		return nil
+	}
+	return e.user
 }
-
 func (d *Decorator) set(user *models.User) {
+	if user == nil || user.ID == "" || d.ttl <= 0 {
+		return 
+	}
 	d.mu.Lock()
 	defer d.mu.Unlock()
+
 	d.users[user.ID] = wrapUser{
 		user:      user,
 		expiresAt: time.Now().Add(d.ttl),
 	}
+}
 
+func (d *Decorator) StartGC() {
+	if d.ttl <= 0 {
+		return
+	}
+	go func() {
+		for {
+			time.Sleep(30 * time.Second)
+			now := time.Now()
+			d.mu.Lock()
+			for k, v := range d.users {
+				if now.After(v.expiresAt) {
+					delete(d.users, k)
+				}
+			}
+			d.mu.Unlock()
+		}
+	}()
 }
 
 // GetUserByID -> check cache first. If missing/expired -> repo, then update cache

@@ -13,7 +13,7 @@ type Config struct {
 	}
 	DB struct {
 		Host     string
-		Port     string
+		Port     string 
 		User     string
 		Password string
 		Name     string
