@@ -1,7 +1,8 @@
 name: Lint
 
 on:
-  push
+  push:
+  pull_request:
 
 jobs:
   build:
@@ -9,21 +10,23 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: 1.24
+          go-version: '1.23'  
 
-      - name: Install dependencies
+      - name: Tidy modules
         run: go mod tidy
 
-      - name: Build
+      - name: Build (sanity)
         run: go build ./...
 
-      - name: Run linter
+      - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v7
         with:
           version: v2.5.0
-          args: ./... --config .golangci.yml
+          args: --config .golangci.yml ./...
+          only-new-issues: false
+          problem-matchers: true

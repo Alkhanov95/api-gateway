@@ -1,17 +1,21 @@
 version: "2"
 
 run:
-   timeout: 5m
+  timeout: 5m
+
+formatters:
+  enable:
+    - goimports
+    - gofmt
 
 linters:
-   enable:
+  enable:
     - errcheck
     - gosimple
     - govet
     - ineffassign
     - staticcheck
     - unused
-    - goimports
     - bodyclose
     - copyloopvar
     - unconvert
